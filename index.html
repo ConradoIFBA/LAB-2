@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calculadora Academica</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: #f4f7f6;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      padding: 40px 16px;
+    }
+
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      max-width: 420px;
+      width: 100%;
+    }
+
+    h1 {
+      color: #2c3e50;
+      margin-bottom: 6px;
+      font-size: 24px;
+      text-align: center;
+    }
+
+    p.subtitulo {
+      color: #7f8c8d;
+      font-size: 14px;
+      margin-bottom: 22px;
+      text-align: center;
+    }
+
+    .secao {
+      margin-bottom: 18px;
+    }
+
+    .secao-titulo {
+      font-size: 12px;
+      font-weight: bold;
+      color: #95a5a6;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #ecf0f1;
+    }
+
+    .input-group {
+      text-align: left;
+      margin-bottom: 14px;
+    }
+
+    .input-group:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      color: #34495e;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .hint {
+      font-weight: normal;
+      color: #95a5a6;
+      font-size: 12px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      border: 2px solid #bdc3c7;
+      border-radius: 6px;
+      font-size: 16px;
+      transition: border-color 0.3s;
+    }
+
+    input[type="text"]:focus {
+      border-color: #3498db;
+      outline: none;
+    }
+
+    input.invalido {
+      border-color: #e74c3c;
+    }
+
+    .erro-campo {
+      font-size: 12px;
+      color: #e74c3c;
+      margin-top: 4px;
+      display: none;
+    }
+
+    .erro-campo.visivel {
+      display: block;
+    }
+
+    button.btn-calcular {
+      width: 100%;
+      padding: 12px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s;
+      margin-top: 6px;
+    }
+
+    button.btn-calcular:hover {
+      background-color: #2980b9;
+    }
+
+    #resultado {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 6px;
+      font-weight: bold;
+    }
+
+    .hidden { display: none; }
+    .aprovado    { background-color: #2ecc71; color: white; }
+    .recuperacao { background-color: #f1c40f; color: #333; }
+    .reprovado   { background-color: #e74c3c; color: white; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Calculadora Academica</h1>
+    <p class="subtitulo">Configure as regras e calcule sua situacao</p>
+
+    <div class="secao">
+      <div class="secao-titulo">Regras de aprovacao</div>
+
+      <div class="input-group">
+        <label for="mediaMinima">Media minima para aprovacao direta <span class="hint">(0 a 10)</span></label>
+        <input type="text" id="mediaMinima" inputmode="decimal" placeholder="Ex: 7.0" value="7.0">
+        <div class="erro-campo" id="erro-mediaMinima">Informe um numero entre 0 e 10.</div>
+      </div>
+
+      <div class="input-group">
+        <label for="notaMinimaReprovacao">Media abaixo da qual reprova direto <span class="hint">(0 a 10)</span></label>
+        <input type="text" id="notaMinimaReprovacao" inputmode="decimal" placeholder="Ex: 4.0" value="4.0">
+        <div class="erro-campo" id="erro-notaMinimaReprovacao">Informe um numero entre 0 e 10.</div>
+      </div>
+
+      <div class="input-group">
+        <label for="mediaFinalNecessaria">Media final necessaria apos a PF <span class="hint">(0 a 10)</span></label>
+        <input type="text" id="mediaFinalNecessaria" inputmode="decimal" placeholder="Ex: 7.0" value="7.0">
+        <div class="erro-campo" id="erro-mediaFinalNecessaria">Informe um numero entre 0 e 10.</div>
+      </div>
+    </div>
+
+    <div class="secao">
+      <div class="secao-titulo">Suas notas</div>
+
+      <div class="input-group">
+        <label for="n1">Nota 1 (N1) <span class="hint">(0 a 10)</span></label>
+        <input type="text" id="n1" inputmode="decimal" placeholder="0.0 - 10.0">
+        <div class="erro-campo" id="erro-n1">Informe um numero entre 0 e 10.</div>
+      </div>
+
+      <div class="input-group">
+        <label for="n2">Nota 2 (N2) <span class="hint">(0 a 10)</span></label>
+        <input type="text" id="n2" inputmode="decimal" placeholder="0.0 - 10.0">
+        <div class="erro-campo" id="erro-n2">Informe um numero entre 0 e 10.</div>
+      </div>
+    </div>
+
+    <button class="btn-calcular" onclick="calcular()">Calcular Situacao</button>
+
+    <div id="resultado" class="hidden"></div>
+  </div>
+
+  <script>
+    // ----- Restricao de digitacao: so numeros, ponto e backspace -----
+    function restringirCampoNumerico(input) {
+      input.addEventListener('keydown', function(e) {
+        const teclasPermitidas = [
+          'Backspace', 'Delete', 'ArrowLeft', 'ArrowRight',
+          'ArrowUp', 'ArrowDown', 'Tab', 'Home', 'End'
+        ];
+        if (teclasPermitidas.includes(e.key)) return;
+
+        // permite Ctrl/Cmd + C/V/A/X
+        if (e.ctrlKey || e.metaKey) return;
+
+        // permite digitos
+        if (/^[0-9]$/.test(e.key)) return;
+
+        // permite um unico ponto decimal
+        if (e.key === '.' && !input.value.includes('.')) return;
+
+        e.preventDefault();
+      });
+
+      // Sanitiza colagens (paste) que tragam texto invalido
+      input.addEventListener('input', function() {
+        let valor = input.value.replace(/[^0-9.]/g, '');
+        const partes = valor.split('.');
+        if (partes.length > 2) {
+          valor = partes[0] + '.' + partes.slice(1).join('');
+        }
+        input.value = valor;
+      });
+    }
+
+    const idsCampos = [
+      'mediaMinima', 'notaMinimaReprovacao', 'mediaFinalNecessaria', 'n1', 'n2'
+    ];
+    idsCampos.forEach(id => restringirCampoNumerico(document.getElementById(id)));
+
+    // ----- Validacao: numero entre 0 e 10 -----
+    function lerCampoValidado(id) {
+      const input = document.getElementById(id);
+      const erro = document.getElementById('erro-' + id);
+      const valor = parseFloat(input.value);
+
+      const valido = input.value.trim() !== '' && !isNaN(valor) && valor >= 0 && valor <= 10;
+
+      input.classList.toggle('invalido', !valido);
+      erro.classList.toggle('visivel', !valido);
+
+      return valido ? valor : null;
+    }
+
+    function calcular() {
+      const mediaMinima            = lerCampoValidado('mediaMinima');
+      const notaMinimaReprovacao   = lerCampoValidado('notaMinimaReprovacao');
+      const mediaFinalNecessaria   = lerCampoValidado('mediaFinalNecessaria');
+      const n1                     = lerCampoValidado('n1');
+      const n2                     = lerCampoValidado('n2');
+
+      const resultado = document.getElementById('resultado');
+
+      if ([mediaMinima, notaMinimaReprovacao, mediaFinalNecessaria, n1, n2].includes(null)) {
+        resultado.classList.remove('hidden');
+        resultado.className = 'recuperacao';
+        resultado.innerHTML = 'Corrija os campos destacados em vermelho.';
+        return;
+      }
+
+      if (notaMinimaReprovacao >= mediaMinima) {
+        resultado.classList.remove('hidden');
+        resultado.className = 'recuperacao';
+        resultado.innerHTML = 'A media de reprovacao direta deve ser menor que a media de aprovacao direta.';
+        return;
+      }
+
+      const mp = (n1 + n2) / 2;
+      const mpFmt = mp.toFixed(2);
+
+      resultado.classList.remove('hidden');
+
+      if (mp >= mediaMinima) {
+        resultado.className = 'aprovado';
+        resultado.innerHTML = `Aprovado(a) direto!<br><small>Media Parcial: ${mpFmt} >= ${mediaMinima.toFixed(1)}</small>`;
+      } else if (mp < notaMinimaReprovacao) {
+        resultado.className = 'reprovado';
+        resultado.innerHTML = `Reprovado(a).<br><small>Media Parcial: ${mpFmt} < ${notaMinimaReprovacao.toFixed(1)}</small>`;
+      } else {
+        const pfNecessaria = (mediaFinalNecessaria * 2) - mp;
+
+        if (pfNecessaria > 10) {
+          resultado.className = 'reprovado';
+          resultado.innerHTML = `Reprovado(a).<br><small>Media Parcial: ${mpFmt} seria necessario tirar ${pfNecessaria.toFixed(2)} na PF, o que e impossivel (maximo 10).</small>`;
+        } else if (pfNecessaria <= 0) {
+          resultado.className = 'aprovado';
+          resultado.innerHTML = `Aprovado(a) apos PF!<br><small>Media Parcial: ${mpFmt} qualquer nota na PF garante a aprovacao.</small>`;
+        } else {
+          resultado.className = 'recuperacao';
+          resultado.innerHTML = `Prova Final necessaria!<br><small>Media Parcial: ${mpFmt} precisa tirar pelo menos <strong>${pfNecessaria.toFixed(2)}</strong> na PF.</small>`;
+        }
+      }
+    }
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') calcular();
+    });
+  </script>
+</body>
+</html>
