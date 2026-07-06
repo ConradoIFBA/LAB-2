@@ -1,300 +1,564 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+<!--
+    ================================================================
+    PROJETO 1 - CALCULADORA ACADEMICA
+    ================================================================
+
+    DESCRICAO:
+    Calculadora que determina a situacao academica do aluno
+    com base em duas notas e regras configuráveis.
+
+    TECNOLOGIAS:
+    - HTML5  → estrutura da pagina
+    - CSS3   → estilizacao e layout
+    - JS     → logica de calculo e restricao de campos
+
+    FUNCIONALIDADES:
+    - Configurar media minima de aprovacao direta
+    - Configurar media minima para nao reprovar direto
+    - Configurar media final necessaria apos PF
+    - Bloqueio em tempo real: campos so aceitam numeros 0-10
+    - Calculo da nota necessaria na Prova Final
+    - Destaque visual por situacao (verde/amarelo/vermelho)
+
+    REGRAS DE NEGOCIO:
+    - MP = (N1 + N2) / 2
+    - MP >= media minima        → Aprovado direto
+    - MP <  nota min reprovacao → Reprovado direto
+    - Caso contrario            → Prova Final necessaria
+    - PF necessaria = (mediaFinal * 2) - MP
+    - Se PF necessaria > 10     → Reprovado (impossivel atingir)
+    ================================================================
+-->
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Calculadora Academica</title>
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora Academica</title>
 
-    body {
-      background-color: #f4f7f6;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      min-height: 100vh;
-      padding: 40px 16px;
-    }
+    <style>
+        /* ================================================================
+           CSS - ESTILOS DA CALCULADORA ACADEMICA
+           ================================================================
 
-    .container {
-      background: white;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-      max-width: 420px;
-      width: 100%;
-    }
+           SECOES:
+           1. Reset global
+           2. Body e layout centralizado
+           3. Container (card branco)
+           4. Secoes e separadores
+           5. Grupos de input (label + campo)
+           6. Campos de texto
+           7. Botao de calcular
+           8. Caixa de resultado
+        */
 
-    h1 {
-      color: #2c3e50;
-      margin-bottom: 6px;
-      font-size: 24px;
-      text-align: center;
-    }
+        /* === 1. RESET GLOBAL === */
+        /* Remove margem e padding padrao do navegador em todos os elementos */
+        * {
+            box-sizing: border-box; /* inclui padding/border no tamanho total */
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
 
-    p.subtitulo {
-      color: #7f8c8d;
-      font-size: 14px;
-      margin-bottom: 22px;
-      text-align: center;
-    }
+        /* === 2. BODY E LAYOUT CENTRALIZADO === */
+        body {
+            background-color: #f4f7f6; /* cinza claro de fundo */
+            display: flex;             /* ativa flexbox para centralizar */
+            justify-content: center;   /* centraliza horizontalmente */
+            align-items: flex-start;   /* alinha no topo verticalmente */
+            min-height: 100vh;         /* ocupa pelo menos toda a altura da tela */
+            padding: 40px 16px;        /* espaco nas bordas (topo e laterais) */
+        }
 
-    .secao {
-      margin-bottom: 18px;
-    }
+        /* === 3. CONTAINER (CARD BRANCO) === */
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;                      /* bordas arredondadas */
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);  /* sombra suave */
+            max-width: 420px;                         /* largura maxima */
+            width: 100%;                              /* responsivo em telas menores */
+        }
 
-    .secao-titulo {
-      font-size: 12px;
-      font-weight: bold;
-      color: #95a5a6;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 10px;
-      padding-bottom: 6px;
-      border-bottom: 1px solid #ecf0f1;
-    }
+        /* Titulo principal */
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 6px;
+            font-size: 24px;
+            text-align: center;
+        }
 
-    .input-group {
-      text-align: left;
-      margin-bottom: 14px;
-    }
+        /* Subtitulo descritivo */
+        p.subtitulo {
+            color: #7f8c8d;
+            font-size: 14px;
+            margin-bottom: 22px;
+            text-align: center;
+        }
 
-    .input-group:last-child {
-      margin-bottom: 0;
-    }
+        /* === 4. SECOES E SEPARADORES === */
+        /* Agrupa campos relacionados (regras / suas notas) */
+        .secao {
+            margin-bottom: 18px;
+        }
 
-    label {
-      display: block;
-      margin-bottom: 5px;
-      color: #34495e;
-      font-weight: bold;
-      font-size: 14px;
-    }
+        /* Cabecalho de cada secao (texto em maiusculo com linha abaixo) */
+        .secao-titulo {
+            font-size: 12px;
+            font-weight: bold;
+            color: #95a5a6;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #ecf0f1; /* linha separadora */
+        }
 
-    .hint {
-      font-weight: normal;
-      color: #95a5a6;
-      font-size: 12px;
-    }
+        /* === 5. GRUPOS DE INPUT (label + campo + erro) === */
+        .input-group {
+            text-align: left;
+            margin-bottom: 14px;
+        }
 
-    input[type="text"] {
-      width: 100%;
-      padding: 10px;
-      border: 2px solid #bdc3c7;
-      border-radius: 6px;
-      font-size: 16px;
-      transition: border-color 0.3s;
-    }
+        /* Remove margem do ultimo grupo para nao duplicar espaco */
+        .input-group:last-child {
+            margin-bottom: 0;
+        }
 
-    input[type="text"]:focus {
-      border-color: #3498db;
-      outline: none;
-    }
+        /* Label (texto descritivo acima do campo) */
+        label {
+            display: block;        /* ocupa linha inteira */
+            margin-bottom: 5px;
+            color: #34495e;
+            font-weight: bold;
+            font-size: 14px;
+        }
 
-    input.invalido {
-      border-color: #e74c3c;
-    }
+        /* Hint: texto auxiliar dentro da label (ex: "0 a 10") */
+        .hint {
+            font-weight: normal;
+            color: #95a5a6;
+            font-size: 12px;
+        }
 
-    .erro-campo {
-      font-size: 12px;
-      color: #e74c3c;
-      margin-top: 4px;
-      display: none;
-    }
+        /* === 6. CAMPOS DE TEXTO === */
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #bdc3c7;   /* borda cinza padrao */
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s; /* animacao suave ao focar */
+        }
 
-    .erro-campo.visivel {
-      display: block;
-    }
+        /* Estado: campo com foco (cursor dentro) */
+        input[type="text"]:focus {
+            border-color: #3498db; /* borda azul ao focar */
+            outline: none;         /* remove contorno padrao do navegador */
+        }
 
-    button.btn-calcular {
-      width: 100%;
-      padding: 12px;
-      background-color: #3498db;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 16px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background 0.3s;
-      margin-top: 6px;
-    }
+        /* Estado: campo invalido (fora do intervalo 0-10) */
+        input.invalido {
+            border-color: #e74c3c; /* borda vermelha */
+        }
 
-    button.btn-calcular:hover {
-      background-color: #2980b9;
-    }
+        /* Mensagem de erro abaixo de cada campo */
+        .erro-campo {
+            font-size: 12px;
+            color: #e74c3c;
+            margin-top: 4px;
+            display: none; /* oculta por padrao */
+        }
 
-    #resultado {
-      margin-top: 20px;
-      padding: 15px;
-      border-radius: 6px;
-      font-weight: bold;
-    }
+        /* Classe adicionada via JS para tornar o erro visivel */
+        .erro-campo.visivel {
+            display: block;
+        }
 
-    .hidden { display: none; }
-    .aprovado    { background-color: #2ecc71; color: white; }
-    .recuperacao { background-color: #f1c40f; color: #333; }
-    .reprovado   { background-color: #e74c3c; color: white; }
-  </style>
+        /* === 7. BOTAO DE CALCULAR === */
+        button.btn-calcular {
+            width: 100%;
+            padding: 12px;
+            background-color: #3498db;    /* azul */
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;  /* animacao ao passar o mouse */
+            margin-top: 6px;
+        }
+
+        /* Estado: hover (mouse sobre o botao) */
+        button.btn-calcular:hover {
+            background-color: #2980b9; /* azul mais escuro */
+        }
+
+        /* === 8. CAIXA DE RESULTADO === */
+        #resultado {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+
+        /* Classe utilitaria: esconde o elemento */
+        .hidden { display: none; }
+
+        /* Situacao: Aprovado direto → verde */
+        .aprovado    { background-color: #2ecc71; color: white; }
+
+        /* Situacao: Prova Final necessaria → amarelo */
+        .recuperacao { background-color: #f1c40f; color: #333; }
+
+        /* Situacao: Reprovado direto → vermelho */
+        .reprovado   { background-color: #e74c3c; color: white; }
+    </style>
+
+    <script>
+        /* ================================================================
+           JAVASCRIPT - RESTRICAO E VALIDACAO DE CAMPOS
+           ================================================================
+
+           FUNCOES:
+           1. restringirCampoNumerico(input) → bloqueia letras/simbolos
+           2. lerCampoValidado(id)           → le e valida valor 0-10
+           3. calcular()                     → calcula e exibe resultado
+
+           FLUXO:
+           Pagina carrega → aplica restricao em todos os campos
+           Usuario digita → restricao bloqueia teclas invalidas
+           Usuario clica  → calcular() valida e exibe resultado
+        */
+
+        /**
+         * Aplica restricao de digitacao em um campo:
+         * - Bloqueia letras e simbolos no keydown
+         * - Permite: digitos (0-9), ponto decimal unico, teclas de edicao
+         * - Sanitiza colagens (paste) que tragam texto invalido
+         *
+         * @param {HTMLInputElement} input - Elemento input a restringir
+         */
+        function restringirCampoNumerico(input) {
+
+            /* Bloqueia teclas invalidas antes de serem inseridas */
+            input.addEventListener('keydown', function(e) {
+
+                /* Teclas de navegacao/edicao sempre permitidas */
+                const teclasPermitidas = [
+                    'Backspace', 'Delete', 'ArrowLeft', 'ArrowRight',
+                    'ArrowUp', 'ArrowDown', 'Tab', 'Home', 'End'
+                ];
+                if (teclasPermitidas.includes(e.key)) return;
+
+                /* Atalhos de teclado (Ctrl/Cmd + C/V/A/X) sempre permitidos */
+                if (e.ctrlKey || e.metaKey) return;
+
+                /* Digitos 0-9 sempre permitidos */
+                if (/^[0-9]$/.test(e.key)) return;
+
+                /* Ponto decimal permitido apenas se ainda nao houver um */
+                if (e.key === '.' && !input.value.includes('.')) return;
+
+                /* Qualquer outra tecla e bloqueada */
+                e.preventDefault();
+            });
+
+            /* Sanitiza o valor apos qualquer modificacao (cobre paste/drag-drop) */
+            input.addEventListener('input', function() {
+                /* Remove tudo que nao seja digito ou ponto */
+                let valor = input.value.replace(/[^0-9.]/g, '');
+
+                /* Garante que exista no maximo um ponto decimal */
+                const partes = valor.split('.');
+                if (partes.length > 2) {
+                    valor = partes[0] + '.' + partes.slice(1).join('');
+                }
+
+                input.value = valor;
+            });
+        }
+
+        /*
+         * Aplica restricao a todos os campos numericos da pagina
+         * IDs: mediaMinima, notaMinimaReprovacao, mediaFinalNecessaria, n1, n2
+         */
+        const idsCampos = [
+            'mediaMinima', 'notaMinimaReprovacao', 'mediaFinalNecessaria', 'n1', 'n2'
+        ];
+        idsCampos.forEach(id => restringirCampoNumerico(document.getElementById(id)));
+
+        /**
+         * Le o valor de um campo e valida se esta entre 0 e 10.
+         * - Destaca o campo em vermelho se invalido
+         * - Exibe mensagem de erro abaixo do campo se invalido
+         *
+         * @param  {string}      id  - ID do elemento input
+         * @returns {number|null}     - Numero valido ou null se invalido
+         */
+        function lerCampoValidado(id) {
+            const input = document.getElementById(id);
+            const erro  = document.getElementById('erro-' + id);
+            const valor = parseFloat(input.value);
+
+            /* Valido se: nao vazio, e numero, e entre 0 e 10 */
+            const valido = input.value.trim() !== ''
+                        && !isNaN(valor)
+                        && valor >= 0
+                        && valor <= 10;
+
+            /* Aplica ou remove classe de erro no input */
+            input.classList.toggle('invalido', !valido);
+
+            /* Mostra ou esconde mensagem de erro */
+            erro.classList.toggle('visivel', !valido);
+
+            return valido ? valor : null;
+        }
+
+        /**
+         * Funcao principal: le todos os campos, valida e calcula resultado.
+         *
+         * ETAPAS:
+         * 1. Le e valida todos os 5 campos
+         * 2. Verifica consistencia das regras configuradas
+         * 3. Calcula a media parcial (MP)
+         * 4. Determina situacao e exibe resultado colorido
+         */
+        function calcular() {
+            /* Etapa 1: ler e validar cada campo individualmente */
+            const mediaMinima          = lerCampoValidado('mediaMinima');
+            const notaMinimaReprovacao = lerCampoValidado('notaMinimaReprovacao');
+            const mediaFinalNecessaria = lerCampoValidado('mediaFinalNecessaria');
+            const n1                   = lerCampoValidado('n1');
+            const n2                   = lerCampoValidado('n2');
+
+            const resultado = document.getElementById('resultado');
+
+            /* Se qualquer campo for invalido (null), interrompe e avisa */
+            if ([mediaMinima, notaMinimaReprovacao, mediaFinalNecessaria, n1, n2].includes(null)) {
+                resultado.classList.remove('hidden');
+                resultado.className = 'recuperacao';
+                resultado.innerHTML = 'Corrija os campos destacados em vermelho.';
+                return;
+            }
+
+            /* Etapa 2: validar consistencia das regras
+               A nota de reprovacao DEVE ser menor que a de aprovacao */
+            if (notaMinimaReprovacao >= mediaMinima) {
+                resultado.classList.remove('hidden');
+                resultado.className = 'recuperacao';
+                resultado.innerHTML = 'A media de reprovacao direta deve ser menor que a media de aprovacao direta.';
+                return;
+            }
+
+            /* Etapa 3: calcular media parcial */
+            const mp     = (n1 + n2) / 2;       /* formula: MP = (N1 + N2) / 2 */
+            const mpFmt  = mp.toFixed(2);        /* formata com 2 casas decimais */
+
+            resultado.classList.remove('hidden');
+
+            /* Etapa 4: determinar situacao */
+
+            if (mp >= mediaMinima) {
+                /* APROVADO DIRETO: MP atingiu a media minima configurada */
+                resultado.className = 'aprovado';
+                resultado.innerHTML = `Aprovado(a) direto!<br>
+                    <small>Media Parcial: ${mpFmt} >= ${mediaMinima.toFixed(1)}</small>`;
+
+            } else if (mp < notaMinimaReprovacao) {
+                /* REPROVADO DIRETO: MP ficou abaixo da nota minima configurada */
+                resultado.className = 'reprovado';
+                resultado.innerHTML = `Reprovado(a).<br>
+                    <small>Media Parcial: ${mpFmt} < ${notaMinimaReprovacao.toFixed(1)}</small>`;
+
+            } else {
+                /* PROVA FINAL: MP esta entre os dois limites
+                   Formula da PF: PF = (mediaFinal * 2) - MP
+                   Logica: (MP + PF) / 2 >= mediaFinal → PF >= mediaFinal*2 - MP */
+                const pfNecessaria = (mediaFinalNecessaria * 2) - mp;
+
+                if (pfNecessaria > 10) {
+                    /* Nota necessaria e impossivel (acima de 10) → reprovado */
+                    resultado.className = 'reprovado';
+                    resultado.innerHTML = `Reprovado(a).<br>
+                        <small>Media Parcial: ${mpFmt} — seria necessario tirar
+                        ${pfNecessaria.toFixed(2)} na PF, o que e impossivel (maximo 10).</small>`;
+
+                } else if (pfNecessaria <= 0) {
+                    /* Nota necessaria e zero ou negativa → aprovado com qualquer nota na PF */
+                    resultado.className = 'aprovado';
+                    resultado.innerHTML = `Aprovado(a) apos PF!<br>
+                        <small>Media Parcial: ${mpFmt} — qualquer nota na PF garante a aprovacao.</small>`;
+
+                } else {
+                    /* Caso normal: exibe a nota minima necessaria na PF */
+                    resultado.className = 'recuperacao';
+                    resultado.innerHTML = `Prova Final necessaria!<br>
+                        <small>Media Parcial: ${mpFmt} — voce precisa tirar pelo menos
+                        <strong>${pfNecessaria.toFixed(2)}</strong> na PF.</small>`;
+                }
+            }
+        }
+
+        /* Permite calcular pressionando Enter em qualquer campo */
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') calcular();
+        });
+
+    </script>
 </head>
 <body>
-  <div class="container">
-    <h1>Calculadora Academica</h1>
-    <p class="subtitulo">Configure as regras e calcule sua situacao</p>
+    <!-- ================================================================
+         ESTRUTURA HTML - CALCULADORA ACADEMICA
+         ================================================================
 
-    <div class="secao">
-      <div class="secao-titulo">Regras de aprovacao</div>
+         HIERARQUIA:
+         body
+         └── .container         (card branco centralizado)
+             ├── h1             (titulo)
+             ├── p.subtitulo    (descricao)
+             ├── .secao         (regras de aprovacao)
+             │   ├── mediaMinima
+             │   ├── notaMinimaReprovacao
+             │   └── mediaFinalNecessaria
+             ├── .secao         (suas notas)
+             │   ├── n1
+             │   └── n2
+             ├── button         (calcular)
+             └── #resultado     (caixa de resultado)
+    -->
 
-      <div class="input-group">
-        <label for="mediaMinima">Media minima para aprovacao direta <span class="hint">(0 a 10)</span></label>
-        <input type="text" id="mediaMinima" inputmode="decimal" placeholder="Ex: 7.0" value="7.0">
-        <div class="erro-campo" id="erro-mediaMinima">Informe um numero entre 0 e 10.</div>
-      </div>
+    <div class="container">
+        <h1>Calculadora Academica</h1>
+        <p class="subtitulo">Configure as regras e calcule sua situacao</p>
 
-      <div class="input-group">
-        <label for="notaMinimaReprovacao">Media abaixo da qual reprova direto <span class="hint">(0 a 10)</span></label>
-        <input type="text" id="notaMinimaReprovacao" inputmode="decimal" placeholder="Ex: 4.0" value="4.0">
-        <div class="erro-campo" id="erro-notaMinimaReprovacao">Informe um numero entre 0 e 10.</div>
-      </div>
+        <!-- ========== SECAO: REGRAS DE APROVACAO ========== -->
+        <!--
+            Permite que o usuario configure os criterios antes de calcular.
+            Os campos vem preenchidos com os valores mais comuns (7.0 / 4.0 / 7.0).
+        -->
+        <div class="secao">
+            <div class="secao-titulo">Regras de aprovacao</div>
 
-      <div class="input-group">
-        <label for="mediaFinalNecessaria">Media final necessaria apos a PF <span class="hint">(0 a 10)</span></label>
-        <input type="text" id="mediaFinalNecessaria" inputmode="decimal" placeholder="Ex: 7.0" value="7.0">
-        <div class="erro-campo" id="erro-mediaFinalNecessaria">Informe um numero entre 0 e 10.</div>
-      </div>
+            <!-- Campo: media minima para aprovacao direta -->
+            <div class="input-group">
+                <label for="mediaMinima">
+                    Media minima para aprovacao direta
+                    <span class="hint">(0 a 10)</span>
+                </label>
+                <!-- type="text" + inputmode="decimal" → teclado numerico no mobile -->
+                <input type="text" id="mediaMinima" inputmode="decimal"
+                       placeholder="Ex: 7.0" value="7.0">
+                <!-- Mensagem de erro: aparece se valor sair de 0-10 -->
+                <div class="erro-campo" id="erro-mediaMinima">
+                    Informe um numero entre 0 e 10.
+                </div>
+            </div>
+
+            <!-- Campo: nota abaixo da qual reprova direto (sem direito a PF) -->
+            <div class="input-group">
+                <label for="notaMinimaReprovacao">
+                    Media abaixo da qual reprova direto
+                    <span class="hint">(0 a 10)</span>
+                </label>
+                <input type="text" id="notaMinimaReprovacao" inputmode="decimal"
+                       placeholder="Ex: 4.0" value="4.0">
+                <div class="erro-campo" id="erro-notaMinimaReprovacao">
+                    Informe um numero entre 0 e 10.
+                </div>
+            </div>
+
+            <!-- Campo: media final minima necessaria apos a prova final -->
+            <div class="input-group">
+                <label for="mediaFinalNecessaria">
+                    Media final necessaria apos a PF
+                    <span class="hint">(0 a 10)</span>
+                </label>
+                <input type="text" id="mediaFinalNecessaria" inputmode="decimal"
+                       placeholder="Ex: 7.0" value="7.0">
+                <div class="erro-campo" id="erro-mediaFinalNecessaria">
+                    Informe um numero entre 0 e 10.
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== SECAO: SUAS NOTAS ========== -->
+        <div class="secao">
+            <div class="secao-titulo">Suas notas</div>
+
+            <!-- Campo: Nota 1 -->
+            <div class="input-group">
+                <label for="n1">
+                    Nota 1 (N1)
+                    <span class="hint">(0 a 10)</span>
+                </label>
+                <input type="text" id="n1" inputmode="decimal" placeholder="0.0 - 10.0">
+                <div class="erro-campo" id="erro-n1">
+                    Informe um numero entre 0 e 10.
+                </div>
+            </div>
+
+            <!-- Campo: Nota 2 -->
+            <div class="input-group">
+                <label for="n2">
+                    Nota 2 (N2)
+                    <span class="hint">(0 a 10)</span>
+                </label>
+                <input type="text" id="n2" inputmode="decimal" placeholder="0.0 - 10.0">
+                <div class="erro-campo" id="erro-n2">
+                    Informe um numero entre 0 e 10.
+                </div>
+            </div>
+        </div>
+
+        <!-- Botao que dispara calcular() -->
+        <button class="btn-calcular" onclick="calcular()">Calcular Situacao</button>
+
+        <!-- Caixa de resultado: oculta ate calcular() ser chamado.
+             A classe (aprovado / recuperacao / reprovado) e aplicada via JS -->
+        <div id="resultado" class="hidden"></div>
     </div>
-
-    <div class="secao">
-      <div class="secao-titulo">Suas notas</div>
-
-      <div class="input-group">
-        <label for="n1">Nota 1 (N1) <span class="hint">(0 a 10)</span></label>
-        <input type="text" id="n1" inputmode="decimal" placeholder="0.0 - 10.0">
-        <div class="erro-campo" id="erro-n1">Informe um numero entre 0 e 10.</div>
-      </div>
-
-      <div class="input-group">
-        <label for="n2">Nota 2 (N2) <span class="hint">(0 a 10)</span></label>
-        <input type="text" id="n2" inputmode="decimal" placeholder="0.0 - 10.0">
-        <div class="erro-campo" id="erro-n2">Informe um numero entre 0 e 10.</div>
-      </div>
-    </div>
-
-    <button class="btn-calcular" onclick="calcular()">Calcular Situacao</button>
-
-    <div id="resultado" class="hidden"></div>
-  </div>
-
-  <script>
-    // ----- Restricao de digitacao: so numeros, ponto e backspace -----
-    function restringirCampoNumerico(input) {
-      input.addEventListener('keydown', function(e) {
-        const teclasPermitidas = [
-          'Backspace', 'Delete', 'ArrowLeft', 'ArrowRight',
-          'ArrowUp', 'ArrowDown', 'Tab', 'Home', 'End'
-        ];
-        if (teclasPermitidas.includes(e.key)) return;
-
-        // permite Ctrl/Cmd + C/V/A/X
-        if (e.ctrlKey || e.metaKey) return;
-
-        // permite digitos
-        if (/^[0-9]$/.test(e.key)) return;
-
-        // permite um unico ponto decimal
-        if (e.key === '.' && !input.value.includes('.')) return;
-
-        e.preventDefault();
-      });
-
-      // Sanitiza colagens (paste) que tragam texto invalido
-      input.addEventListener('input', function() {
-        let valor = input.value.replace(/[^0-9.]/g, '');
-        const partes = valor.split('.');
-        if (partes.length > 2) {
-          valor = partes[0] + '.' + partes.slice(1).join('');
-        }
-        input.value = valor;
-      });
-    }
-
-    const idsCampos = [
-      'mediaMinima', 'notaMinimaReprovacao', 'mediaFinalNecessaria', 'n1', 'n2'
-    ];
-    idsCampos.forEach(id => restringirCampoNumerico(document.getElementById(id)));
-
-    // ----- Validacao: numero entre 0 e 10 -----
-    function lerCampoValidado(id) {
-      const input = document.getElementById(id);
-      const erro = document.getElementById('erro-' + id);
-      const valor = parseFloat(input.value);
-
-      const valido = input.value.trim() !== '' && !isNaN(valor) && valor >= 0 && valor <= 10;
-
-      input.classList.toggle('invalido', !valido);
-      erro.classList.toggle('visivel', !valido);
-
-      return valido ? valor : null;
-    }
-
-    function calcular() {
-      const mediaMinima            = lerCampoValidado('mediaMinima');
-      const notaMinimaReprovacao   = lerCampoValidado('notaMinimaReprovacao');
-      const mediaFinalNecessaria   = lerCampoValidado('mediaFinalNecessaria');
-      const n1                     = lerCampoValidado('n1');
-      const n2                     = lerCampoValidado('n2');
-
-      const resultado = document.getElementById('resultado');
-
-      if ([mediaMinima, notaMinimaReprovacao, mediaFinalNecessaria, n1, n2].includes(null)) {
-        resultado.classList.remove('hidden');
-        resultado.className = 'recuperacao';
-        resultado.innerHTML = 'Corrija os campos destacados em vermelho.';
-        return;
-      }
-
-      if (notaMinimaReprovacao >= mediaMinima) {
-        resultado.classList.remove('hidden');
-        resultado.className = 'recuperacao';
-        resultado.innerHTML = 'A media de reprovacao direta deve ser menor que a media de aprovacao direta.';
-        return;
-      }
-
-      const mp = (n1 + n2) / 2;
-      const mpFmt = mp.toFixed(2);
-
-      resultado.classList.remove('hidden');
-
-      if (mp >= mediaMinima) {
-        resultado.className = 'aprovado';
-        resultado.innerHTML = `Aprovado(a) direto!<br><small>Media Parcial: ${mpFmt} >= ${mediaMinima.toFixed(1)}</small>`;
-      } else if (mp < notaMinimaReprovacao) {
-        resultado.className = 'reprovado';
-        resultado.innerHTML = `Reprovado(a).<br><small>Media Parcial: ${mpFmt} < ${notaMinimaReprovacao.toFixed(1)}</small>`;
-      } else {
-        const pfNecessaria = (mediaFinalNecessaria * 2) - mp;
-
-        if (pfNecessaria > 10) {
-          resultado.className = 'reprovado';
-          resultado.innerHTML = `Reprovado(a).<br><small>Media Parcial: ${mpFmt} seria necessario tirar ${pfNecessaria.toFixed(2)} na PF, o que e impossivel (maximo 10).</small>`;
-        } else if (pfNecessaria <= 0) {
-          resultado.className = 'aprovado';
-          resultado.innerHTML = `Aprovado(a) apos PF!<br><small>Media Parcial: ${mpFmt} qualquer nota na PF garante a aprovacao.</small>`;
-        } else {
-          resultado.className = 'recuperacao';
-          resultado.innerHTML = `Prova Final necessaria!<br><small>Media Parcial: ${mpFmt} precisa tirar pelo menos <strong>${pfNecessaria.toFixed(2)}</strong> na PF.</small>`;
-        }
-      }
-    }
-
-    document.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') calcular();
-    });
-  </script>
 </body>
 </html>
+
+<!-- ================================================================
+     RESUMO DO ARQUIVO
+     ================================================================
+
+     CAMPOS DE ENTRADA:
+     - mediaMinima            → Configuravel, padrao 7.0
+     - notaMinimaReprovacao   → Configuravel, padrao 4.0
+     - mediaFinalNecessaria   → Configuravel, padrao 7.0 (independente)
+     - n1                     → Nota 1 do aluno (0-10)
+     - n2                     → Nota 2 do aluno (0-10)
+
+     RESTRICOES DOS CAMPOS:
+     - Bloqueio via keydown   → impede letras e simbolos em tempo real
+     - Sanitizacao via input  → limpa colagens invalidas
+     - Validacao via JS       → destaca em vermelho se fora de 0-10
+
+     LOGICA DE CALCULO:
+     1. MP = (N1 + N2) / 2
+     2. MP >= mediaMinima              → Aprovado direto (verde)
+     3. MP <  notaMinimaReprovacao     → Reprovado direto (vermelho)
+     4. Caso contrario:
+        PF = (mediaFinalNecessaria*2) - MP
+        PF > 10  → Reprovado (impossivel)     (vermelho)
+        PF <= 0  → Aprovado garantido na PF   (verde)
+        Caso ok  → Exibe nota necessaria na PF (amarelo)
+
+     DESIGN:
+     - Fundo cinza claro (#f4f7f6)
+     - Card branco com sombra
+     - Borda azul ao focar campos
+     - Borda vermelha em campos invalidos
+     - Resultado colorido por situacao
+
+     COMPATIBILIDADE:
+     - Funciona com Live Server (VS Code)
+     - Nao requer servidor Java/Tomcat
+     - Responsivo para mobile
+     ================================================================ -->
