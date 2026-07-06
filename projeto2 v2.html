@@ -1,592 +1,1007 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+<!--
+    ================================================================
+    PROJETO 2 - TO-DO LIST
+    ================================================================
+
+    DESCRICAO:
+    Lista de tarefas com organizacao por prazo, prioridade
+    e abas de visualizacao (Hoje / Semana / Mes / Todas).
+
+    TECNOLOGIAS:
+    - HTML5  → estrutura da pagina
+    - CSS3   → estilizacao, badges e layout responsivo
+    - JS     → logica de tarefas, filtros e renderizacao
+
+    FUNCIONALIDADES:
+    - Adicionar tarefa com prioridade (Alta/Media/Baixa)
+    - Definir data de vencimento ao criar a tarefa
+    - Abas de periodo: Hoje / Semana / Mes / Todas
+    - Filtros de status: Todas / Pendentes / Concluidas
+    - Marcar tarefa como concluida (checkbox)
+    - Excluir tarefa individual
+    - Limpar todas as tarefas concluidas de uma vez
+    - Cards de resumo: pendentes por periodo + atrasadas
+    - Ordenacao automatica: atrasadas primeiro, depois por data
+    - Destaque visual para tarefas atrasadas
+
+    ESTRUTURA DE DADOS (objeto tarefa):
+    {
+        id:        number  → timestamp unico (Date.now())
+        texto:     string  → descricao da tarefa
+        concluida: boolean → true se marcada como feita
+        prioridade: string → 'alta' | 'media' | 'baixa'
+        data:      string  → 'YYYY-MM-DD' ou '' se sem data
+    }
+    ================================================================
+-->
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>To-Do List</title>
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List</title>
 
-    body {
-      background-color: #f4f7f6;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      min-height: 100vh;
-      padding: 40px 16px;
-    }
+    <style>
+        /* ================================================================
+           CSS - ESTILOS DA TO-DO LIST
+           ================================================================
 
-    .container {
-      background: white;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-      max-width: 520px;
-      width: 100%;
-    }
+           SECOES:
+           1.  Reset global
+           2.  Body e layout
+           3.  Container (card branco)
+           4.  Cards de resumo (topo)
+           5.  Formulario de adicao
+           6.  Linha de data e prioridade
+           7.  Abas de periodo (Hoje/Semana/Mes/Todas)
+           8.  Filtros de status
+           9.  Lista de tarefas (ul e li)
+           10. Badges de prioridade e data
+           11. Botoes de acao (excluir, limpar)
+           12. Rodape e contador
+        */
 
-    h1 {
-      color: #2c3e50;
-      font-size: 24px;
-      text-align: center;
-      margin-bottom: 4px;
-    }
+        /* === 1. RESET GLOBAL === */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
 
-    p.subtitulo {
-      color: #7f8c8d;
-      font-size: 13px;
-      text-align: center;
-      margin-bottom: 22px;
-    }
+        /* === 2. BODY E LAYOUT === */
+        body {
+            background-color: #f4f7f6;
+            display: flex;
+            justify-content: center;   /* centraliza horizontalmente */
+            align-items: flex-start;   /* alinha no topo */
+            min-height: 100vh;
+            padding: 40px 16px;
+        }
 
-    /* Abas */
-    .abas {
-      display: flex;
-      border-bottom: 2px solid #ecf0f1;
-      margin-bottom: 20px;
-    }
+        /* === 3. CONTAINER (CARD BRANCO) === */
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            max-width: 520px;
+            width: 100%;
+        }
 
-    .aba {
-      flex: 1;
-      padding: 10px 0;
-      text-align: center;
-      font-size: 14px;
-      font-weight: bold;
-      color: #95a5a6;
-      cursor: pointer;
-      border-bottom: 3px solid transparent;
-      margin-bottom: -2px;
-      transition: color 0.2s, border-color 0.2s;
-      background: none;
-      border-top: none;
-      border-left: none;
-      border-right: none;
-    }
+        h1 {
+            color: #2c3e50;
+            font-size: 24px;
+            text-align: center;
+            margin-bottom: 4px;
+        }
 
-    .aba.ativa {
-      color: #3498db;
-      border-bottom-color: #3498db;
-    }
+        p.subtitulo {
+            color: #7f8c8d;
+            font-size: 13px;
+            text-align: center;
+            margin-bottom: 22px;
+        }
 
-    .aba:hover:not(.ativa) {
-      color: #2c3e50;
-    }
+        /* === 4. CARDS DE RESUMO (topo da pagina) === */
+        /* Linha horizontal com 4 cards lado a lado */
+        .resumo-abas {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 18px;
+        }
 
-    .aba-info {
-      font-size: 11px;
-      color: #bdc3c7;
-      display: block;
-      font-weight: normal;
-    }
+        /* Card individual de contagem */
+        .resumo-card {
+            flex: 1;                           /* divide espaco igualmente */
+            background: #f8f9fa;
+            border: 1.5px solid #ecf0f1;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+        }
 
-    .aba.ativa .aba-info {
-      color: #7fb3d3;
-    }
+        /* Numero grande dentro do card */
+        .resumo-card .numero {
+            font-size: 22px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
 
-    /* Formulario */
-    .input-row {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
+        /* Rotulo abaixo do numero */
+        .resumo-card .label {
+            font-size: 11px;
+            color: #95a5a6;
+            margin-top: 2px;
+        }
 
-    input[type="text"] {
-      flex: 1;
-      padding: 10px 14px;
-      border: 2px solid #bdc3c7;
-      border-radius: 6px;
-      font-size: 15px;
-      transition: border-color 0.3s;
-    }
+        /* Card de destaque (Hoje) → numero azul */
+        .resumo-card.destaque .numero { color: #3498db; }
 
-    input[type="text"]:focus {
-      border-color: #3498db;
-      outline: none;
-    }
+        /* Card de alerta (Atrasadas) → numero vermelho */
+        .resumo-card.alerta   .numero { color: #e74c3c; }
 
-    .row-data {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 16px;
-    }
+        /* === 5. FORMULARIO DE ADICAO === */
+        /* Linha com campo de texto + botao Adicionar */
+        .input-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
 
-    .row-data select,
-    .row-data input[type="date"] {
-      flex: 1;
-      padding: 8px 10px;
-      border: 2px solid #bdc3c7;
-      border-radius: 6px;
-      font-size: 14px;
-      color: #34495e;
-      background: white;
-      transition: border-color 0.3s;
-    }
+        /* Campo de texto da nova tarefa */
+        input[type="text"] {
+            flex: 1;                   /* ocupa o espaco restante */
+            padding: 10px 14px;
+            border: 2px solid #bdc3c7;
+            border-radius: 6px;
+            font-size: 15px;
+            transition: border-color 0.3s;
+        }
 
-    .row-data select:focus,
-    .row-data input[type="date"]:focus {
-      border-color: #3498db;
-      outline: none;
-    }
+        input[type="text"]:focus {
+            border-color: #3498db;
+            outline: none;
+        }
 
-    button.btn-add {
-      padding: 10px 18px;
-      background-color: #3498db;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 15px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background 0.3s;
-      white-space: nowrap;
-    }
+        /* === 6. LINHA DE DATA E PRIORIDADE === */
+        .row-data {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
 
-    button.btn-add:hover {
-      background-color: #2980b9;
-    }
+        /* Select de prioridade e input de data lado a lado */
+        .row-data select,
+        .row-data input[type="date"] {
+            flex: 1;
+            padding: 8px 10px;
+            border: 2px solid #bdc3c7;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #34495e;
+            background: white;
+            transition: border-color 0.3s;
+        }
 
-    /* Filtros */
-    .filtros {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 16px;
-    }
+        .row-data select:focus,
+        .row-data input[type="date"]:focus {
+            border-color: #3498db;
+            outline: none;
+        }
 
-    .filtros button {
-      flex: 1;
-      padding: 7px;
-      border: 2px solid #bdc3c7;
-      border-radius: 6px;
-      background: white;
-      color: #7f8c8d;
-      font-size: 13px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
+        /* Botao Adicionar */
+        button.btn-add {
+            padding: 10px 18px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+            white-space: nowrap; /* impede quebra de linha no botao */
+        }
 
-    .filtros button.ativo {
-      border-color: #3498db;
-      color: #3498db;
-      font-weight: bold;
-    }
+        button.btn-add:hover {
+            background-color: #2980b9;
+        }
 
-    /* Lista */
-    ul#lista {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      min-height: 60px;
-    }
+        /* === 7. ABAS DE PERIODO === */
+        /* Container das abas com linha inferior */
+        .abas {
+            display: flex;
+            border-bottom: 2px solid #ecf0f1;
+            margin-bottom: 20px;
+        }
 
-    li {
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      padding: 12px 14px;
-      border: 1.5px solid #ecf0f1;
-      border-radius: 8px;
-      background: #fafafa;
-      transition: opacity 0.2s;
-    }
+        /* Botao de cada aba */
+        .aba {
+            flex: 1;
+            padding: 10px 0;
+            text-align: center;
+            font-size: 14px;
+            font-weight: bold;
+            color: #95a5a6;           /* cinza quando inativa */
+            cursor: pointer;
+            border-bottom: 3px solid transparent; /* linha invisivel por padrao */
+            margin-bottom: -2px;      /* sobrepoem a linha do container */
+            transition: color 0.2s, border-color 0.2s;
+            /* Zera estilos de botao nativo */
+            background: none;
+            border-top: none;
+            border-left: none;
+            border-right: none;
+        }
 
-    li.concluida {
-      opacity: 0.55;
-    }
+        /* Aba selecionada: azul com linha azul embaixo */
+        .aba.ativa {
+            color: #3498db;
+            border-bottom-color: #3498db;
+        }
 
-    li.concluida .texto-tarefa {
-      text-decoration: line-through;
-      color: #95a5a6;
-    }
+        .aba:hover:not(.ativa) {
+            color: #2c3e50;
+        }
 
-    input[type="checkbox"] {
-      width: 18px;
-      height: 18px;
-      accent-color: #2ecc71;
-      cursor: pointer;
-      flex-shrink: 0;
-      margin-top: 2px;
-    }
+        /* Texto auxiliar abaixo do nome da aba (ex: "proximos 7 dias") */
+        .aba-info {
+            font-size: 11px;
+            color: #bdc3c7;
+            display: block;
+            font-weight: normal;
+        }
 
-    .tarefa-corpo {
-      flex: 1;
-    }
+        .aba.ativa .aba-info {
+            color: #7fb3d3; /* azul claro quando ativa */
+        }
 
-    .texto-tarefa {
-      font-size: 15px;
-      color: #2c3e50;
-      word-break: break-word;
-    }
+        /* === 8. FILTROS DE STATUS === */
+        /* Linha de botoes: Todas / Pendentes / Concluidas */
+        .filtros {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
 
-    .tarefa-meta {
-      display: flex;
-      gap: 8px;
-      margin-top: 5px;
-      flex-wrap: wrap;
-    }
+        .filtros button {
+            flex: 1;
+            padding: 7px;
+            border: 2px solid #bdc3c7;
+            border-radius: 6px;
+            background: white;
+            color: #7f8c8d;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
 
-    .badge {
-      font-size: 11px;
-      padding: 2px 8px;
-      border-radius: 20px;
-      font-weight: 600;
-    }
+        /* Filtro ativo: borda e texto azul */
+        .filtros button.ativo {
+            border-color: #3498db;
+            color: #3498db;
+            font-weight: bold;
+        }
 
-    .badge-prioridade-alta   { background: #fdecea; color: #e74c3c; }
-    .badge-prioridade-media  { background: #fef9e7; color: #f39c12; }
-    .badge-prioridade-baixa  { background: #eafaf1; color: #27ae60; }
+        /* === 9. LISTA DE TAREFAS === */
+        ul#lista {
+            list-style: none;
+            display: flex;
+            flex-direction: column; /* empilha os itens verticalmente */
+            gap: 10px;
+            min-height: 60px;
+        }
 
-    .badge-data {
-      background: #eaf4fb;
-      color: #2980b9;
-      font-size: 11px;
-      padding: 2px 8px;
-      border-radius: 20px;
-    }
+        /* Item individual da lista */
+        li {
+            display: flex;
+            align-items: flex-start; /* alinha no topo (para textos longos) */
+            gap: 12px;
+            padding: 12px 14px;
+            border: 1.5px solid #ecf0f1;
+            border-radius: 8px;
+            background: #fafafa;
+            transition: opacity 0.2s;
+        }
 
-    .badge-atrasada {
-      background: #fdecea;
-      color: #e74c3c;
-    }
+        /* Item concluido: opacidade reduzida */
+        li.concluida {
+            opacity: 0.55;
+        }
 
-    button.btn-excluir {
-      background: none;
-      border: none;
-      color: #e74c3c;
-      font-size: 16px;
-      cursor: pointer;
-      padding: 2px 6px;
-      border-radius: 4px;
-      transition: background 0.2s;
-      flex-shrink: 0;
-    }
+        /* Texto do item concluido: riscado e cinza */
+        li.concluida .texto-tarefa {
+            text-decoration: line-through;
+            color: #95a5a6;
+        }
 
-    button.btn-excluir:hover {
-      background-color: #fdecea;
-    }
+        /* Checkbox de cada item */
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #2ecc71; /* cor verde nativa do checkbox */
+            cursor: pointer;
+            flex-shrink: 0;        /* impede que encolha */
+            margin-top: 2px;
+        }
 
-    /* Rodape */
-    .rodape {
-      margin-top: 18px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 13px;
-      color: #95a5a6;
-    }
+        /* Corpo do item: texto + badges */
+        .tarefa-corpo {
+            flex: 1; /* ocupa o espaco restante */
+        }
 
-    button.btn-limpar {
-      background: none;
-      border: none;
-      color: #e74c3c;
-      font-size: 13px;
-      cursor: pointer;
-      padding: 0;
-    }
+        /* Texto principal da tarefa */
+        .texto-tarefa {
+            font-size: 15px;
+            color: #2c3e50;
+            word-break: break-word; /* quebra palavras longas */
+        }
 
-    button.btn-limpar:hover {
-      text-decoration: underline;
-    }
+        /* Linha de metadados (prioridade + data) */
+        .tarefa-meta {
+            display: flex;
+            gap: 8px;
+            margin-top: 5px;
+            flex-wrap: wrap; /* quebra para proxima linha se necessario */
+        }
 
-    .vazio {
-      text-align: center;
-      color: #bdc3c7;
-      font-size: 14px;
-      padding: 28px 0;
-    }
+        /* === 10. BADGES DE PRIORIDADE E DATA === */
+        /* Estilo base de badge (pastilha colorida) */
+        .badge {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 20px; /* formato de pilula */
+            font-weight: 600;
+        }
 
-    .resumo-abas {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 18px;
-    }
+        /* Badge de prioridade Alta → fundo vermelho claro */
+        .badge-prioridade-alta   { background: #fdecea; color: #e74c3c; }
 
-    .resumo-card {
-      flex: 1;
-      background: #f8f9fa;
-      border: 1.5px solid #ecf0f1;
-      border-radius: 8px;
-      padding: 10px;
-      text-align: center;
-    }
+        /* Badge de prioridade Media → fundo amarelo claro */
+        .badge-prioridade-media  { background: #fef9e7; color: #f39c12; }
 
-    .resumo-card .numero {
-      font-size: 22px;
-      font-weight: bold;
-      color: #2c3e50;
-    }
+        /* Badge de prioridade Baixa → fundo verde claro */
+        .badge-prioridade-baixa  { background: #eafaf1; color: #27ae60; }
 
-    .resumo-card .label {
-      font-size: 11px;
-      color: #95a5a6;
-      margin-top: 2px;
-    }
+        /* Badge de data padrao → fundo azul claro */
+        .badge-data {
+            background: #eaf4fb;
+            color: #2980b9;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 20px;
+        }
 
-    .resumo-card.destaque .numero { color: #3498db; }
-    .resumo-card.alerta   .numero { color: #e74c3c; }
-  </style>
+        /* Badge de data atrasada → fundo vermelho claro (sobrescreve badge-data) */
+        .badge-atrasada {
+            background: #fdecea;
+            color: #e74c3c;
+        }
+
+        /* === 11. BOTOES DE ACAO === */
+        /* Botao X de excluir tarefa */
+        button.btn-excluir {
+            background: none;
+            border: none;
+            color: #e74c3c;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 4px;
+            transition: background 0.2s;
+            flex-shrink: 0; /* nao encolhe com textos longos */
+        }
+
+        button.btn-excluir:hover {
+            background-color: #fdecea;
+        }
+
+        /* === 12. RODAPE E CONTADOR === */
+        .rodape {
+            margin-top: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            color: #95a5a6;
+        }
+
+        /* Botao "Limpar concluidas" */
+        button.btn-limpar {
+            background: none;
+            border: none;
+            color: #e74c3c;
+            font-size: 13px;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        button.btn-limpar:hover {
+            text-decoration: underline;
+        }
+
+        /* Mensagem quando nao ha tarefas visiveis */
+        .vazio {
+            text-align: center;
+            color: #bdc3c7;
+            font-size: 14px;
+            padding: 28px 0;
+        }
+    </style>
 </head>
 <body>
+
 <div class="container">
 
-  <h1>To-Do List</h1>
-  <p class="subtitulo">Organize suas tarefas por prazo</p>
+    <h1>To-Do List</h1>
+    <p class="subtitulo">Organize suas tarefas por prazo</p>
 
-  <!-- Cards de resumo -->
-  <div class="resumo-abas">
-    <div class="resumo-card destaque">
-      <div class="numero" id="res-hoje">0</div>
-      <div class="label">Hoje</div>
+    <!-- ================================================================
+         CARDS DE RESUMO
+         ================================================================
+         Exibem contagem de tarefas PENDENTES por periodo.
+         Os numeros sao atualizados em tempo real por renderizar().
+    -->
+    <div class="resumo-abas">
+        <!-- Hoje: tarefas sem data OU com data igual a hoje -->
+        <div class="resumo-card destaque">
+            <div class="numero" id="res-hoje">0</div>
+            <div class="label">Hoje</div>
+        </div>
+
+        <!-- Semana: tarefas com data nos proximos 7 dias -->
+        <div class="resumo-card">
+            <div class="numero" id="res-semana">0</div>
+            <div class="label">Esta semana</div>
+        </div>
+
+        <!-- Mes: tarefas com data nos proximos 30 dias -->
+        <div class="resumo-card">
+            <div class="numero" id="res-mes">0</div>
+            <div class="label">Este mes</div>
+        </div>
+
+        <!-- Atrasadas: pendentes com data anterior a hoje -->
+        <div class="resumo-card alerta">
+            <div class="numero" id="res-atrasadas">0</div>
+            <div class="label">Atrasadas</div>
+        </div>
     </div>
-    <div class="resumo-card">
-      <div class="numero" id="res-semana">0</div>
-      <div class="label">Esta semana</div>
+
+    <!-- ================================================================
+         FORMULARIO DE ADICAO
+         ================================================================
+         Nao usa <form> para evitar recarregamento da pagina.
+         A adicao e feita por adicionarTarefa() via onclick e Enter.
+    -->
+
+    <!-- Linha 1: campo de texto + botao Adicionar -->
+    <div class="input-row">
+        <input type="text" id="inputTarefa" placeholder="Digite uma nova tarefa...">
+        <button class="btn-add" onclick="adicionarTarefa()">Adicionar</button>
     </div>
-    <div class="resumo-card">
-      <div class="numero" id="res-mes">0</div>
-      <div class="label">Este mes</div>
+
+    <!-- Linha 2: selecao de prioridade + data de vencimento -->
+    <div class="row-data">
+        <!-- Select de prioridade: padrao "media" -->
+        <select id="prioridade">
+            <option value="media">Prioridade: Media</option>
+            <option value="alta">Prioridade: Alta</option>
+            <option value="baixa">Prioridade: Baixa</option>
+        </select>
+
+        <!-- Data de vencimento: preenchida com hoje via JS -->
+        <input type="date" id="dataVencimento">
     </div>
-    <div class="resumo-card alerta">
-      <div class="numero" id="res-atrasadas">0</div>
-      <div class="label">Atrasadas</div>
+
+    <!-- ================================================================
+         ABAS DE PERIODO
+         ================================================================
+         Controlam QUAIS tarefas aparecem na lista com base na data.
+         A aba ativa e marcada com a classe CSS "ativa".
+         mudarAba(periodo) gerencia a troca.
+    -->
+    <div class="abas">
+        <button class="aba ativa" id="aba-hoje"   onclick="mudarAba('hoje')">
+            Hoje
+            <span class="aba-info">tarefas do dia</span>
+        </button>
+        <button class="aba"       id="aba-semana" onclick="mudarAba('semana')">
+            Semana
+            <span class="aba-info">proximos 7 dias</span>
+        </button>
+        <button class="aba"       id="aba-mes"    onclick="mudarAba('mes')">
+            Mes
+            <span class="aba-info">proximos 30 dias</span>
+        </button>
+        <button class="aba"       id="aba-todas"  onclick="mudarAba('todas')">
+            Todas
+            <span class="aba-info">sem filtro</span>
+        </button>
     </div>
-  </div>
 
-  <!-- Formulario -->
-  <div class="input-row">
-    <input type="text" id="inputTarefa" placeholder="Digite uma nova tarefa...">
-    <button class="btn-add" onclick="adicionarTarefa()">Adicionar</button>
-  </div>
-  <div class="row-data">
-    <select id="prioridade">
-      <option value="media">Prioridade: Media</option>
-      <option value="alta">Prioridade: Alta</option>
-      <option value="baixa">Prioridade: Baixa</option>
-    </select>
-    <input type="date" id="dataVencimento">
-  </div>
+    <!-- ================================================================
+         FILTROS DE STATUS
+         ================================================================
+         Filtram entre: Todas / Pendentes / Concluidas.
+         Combinam com a aba ativa (ex: "pendentes desta semana").
+    -->
+    <div class="filtros">
+        <button id="filtro-todas"      class="ativo" onclick="filtrar('todas')">Todas</button>
+        <button id="filtro-pendentes"               onclick="filtrar('pendentes')">Pendentes</button>
+        <button id="filtro-concluidas"              onclick="filtrar('concluidas')">Concluidas</button>
+    </div>
 
-  <!-- Abas -->
-  <div class="abas">
-    <button class="aba ativa" id="aba-hoje"   onclick="mudarAba('hoje')">
-      Hoje
-      <span class="aba-info">tarefas do dia</span>
-    </button>
-    <button class="aba" id="aba-semana" onclick="mudarAba('semana')">
-      Semana
-      <span class="aba-info">proximos 7 dias</span>
-    </button>
-    <button class="aba" id="aba-mes"    onclick="mudarAba('mes')">
-      Mes
-      <span class="aba-info">proximos 30 dias</span>
-    </button>
-    <button class="aba" id="aba-todas"  onclick="mudarAba('todas')">
-      Todas
-      <span class="aba-info">sem filtro</span>
-    </button>
-  </div>
+    <!-- ================================================================
+         LISTA DE TAREFAS
+         ================================================================
+         Preenchida dinamicamente por renderizar().
+         Cada <li> e gerado via template string no JS.
+    -->
+    <ul id="lista"></ul>
 
-  <!-- Filtros de status -->
-  <div class="filtros">
-    <button id="filtro-todas"     class="ativo" onclick="filtrar('todas')">Todas</button>
-    <button id="filtro-pendentes"             onclick="filtrar('pendentes')">Pendentes</button>
-    <button id="filtro-concluidas"            onclick="filtrar('concluidas')">Concluidas</button>
-  </div>
-
-  <ul id="lista"></ul>
-
-  <div class="rodape">
-    <span id="contador">0 tarefa(s) pendente(s)</span>
-    <button class="btn-limpar" onclick="limparConcluidas()">Limpar concluidas</button>
-  </div>
+    <!-- Rodape: contador de pendentes + botao de limpeza -->
+    <div class="rodape">
+        <span id="contador">0 tarefa(s) pendente(s)</span>
+        <button class="btn-limpar" onclick="limparConcluidas()">Limpar concluidas</button>
+    </div>
 
 </div>
 
 <script>
-  // ---- Estado ----
-  let tarefas = [];
-  let abaAtual = 'hoje';
-  let filtroAtual = 'todas';
+    /* ================================================================
+       JAVASCRIPT - LOGICA DA TO-DO LIST
+       ================================================================
 
-  // ---- Data helpers ----
-  function hoje() {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  }
+       VARIAVEIS DE ESTADO:
+       - tarefas[]    → array com todos os objetos de tarefa
+       - abaAtual     → string com a aba selecionada ('hoje'|'semana'|'mes'|'todas')
+       - filtroAtual  → string com o filtro de status ('todas'|'pendentes'|'concluidas')
 
-  function addDias(n) {
-    const d = new Date();
-    d.setDate(d.getDate() + n);
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  }
+       FUNCOES:
+       Auxiliares de data:
+       - hoje()          → retorna data atual em 'YYYY-MM-DD'
+       - addDias(n)      → retorna data atual + n dias em 'YYYY-MM-DD'
+       - formatarData()  → converte 'YYYY-MM-DD' para 'DD/MM/YYYY'
+       - isAtrasada(t)   → true se tarefa pendente com data passada
 
-  function formatarData(iso) {
-    if (!iso) return '';
-    const [a, m, d] = iso.split('-');
-    return `${d}/${m}/${a}`;
-  }
+       Filtragem:
+       - filtrarPorAba(lista)    → filtra pelo periodo da aba ativa
+       - filtrarPorStatus(lista) → filtra pelo status (pendente/concluida)
 
-  function isAtrasada(t) {
-    return t.data && !t.concluida && t.data < hoje();
-  }
+       Acoes do usuario:
+       - adicionarTarefa()     → cria nova tarefa e chama renderizar()
+       - alternarConcluida(id) → alterna concluida/pendente e renderiza
+       - excluirTarefa(id)     → remove tarefa do array e renderiza
+       - limparConcluidas()    → remove todas as concluidas e renderiza
+       - mudarAba(aba)         → troca aba ativa e renderiza
+       - filtrar(tipo)         → troca filtro de status e renderiza
 
-  // ---- Filtro por aba ----
-  function filtrarPorAba(lista) {
-    const hj = hoje();
-    const fim7  = addDias(7);
-    const fim30 = addDias(30);
+       Renderizacao:
+       - renderizar()  → atualiza cards, contador e lista completa
 
-    if (abaAtual === 'hoje')
-      return lista.filter(t => !t.data || t.data === hj || isAtrasada(t));
-    if (abaAtual === 'semana')
-      return lista.filter(t => !t.data || (t.data >= hj && t.data <= fim7) || isAtrasada(t));
-    if (abaAtual === 'mes')
-      return lista.filter(t => !t.data || (t.data >= hj && t.data <= fim30) || isAtrasada(t));
-    return lista; // todas
-  }
+       Utilitarios:
+       - escapar(texto)      → previne injecao de HTML (XSS)
+       - capitalizar(str)    → primeira letra maiuscula
+    */
 
-  // ---- Filtro por status ----
-  function filtrarPorStatus(lista) {
-    if (filtroAtual === 'pendentes')  return lista.filter(t => !t.concluida);
-    if (filtroAtual === 'concluidas') return lista.filter(t =>  t.concluida);
-    return lista;
-  }
+    /* ---- ESTADO GLOBAL ---- */
+    let tarefas     = []; /* array de objetos tarefa */
+    let abaAtual    = 'hoje';
+    let filtroAtual = 'todas';
 
-  // ---- Adicionar ----
-  function adicionarTarefa() {
-    const input = document.getElementById('inputTarefa');
-    const texto = input.value.trim();
-    if (!texto) { input.focus(); return; }
+    /* ================================================================
+       AUXILIARES DE DATA
+       ================================================================ */
 
-    const prioridade = document.getElementById('prioridade').value;
-    const data       = document.getElementById('dataVencimento').value;
-
-    tarefas.push({ id: Date.now(), texto, concluida: false, prioridade, data });
-
-    input.value = '';
-    document.getElementById('dataVencimento').value = '';
-    document.getElementById('prioridade').value = 'media';
-    input.focus();
-    renderizar();
-  }
-
-  // ---- Acoes ----
-  function alternarConcluida(id) {
-    const t = tarefas.find(t => t.id === id);
-    if (t) t.concluida = !t.concluida;
-    renderizar();
-  }
-
-  function excluirTarefa(id) {
-    tarefas = tarefas.filter(t => t.id !== id);
-    renderizar();
-  }
-
-  function limparConcluidas() {
-    tarefas = tarefas.filter(t => !t.concluida);
-    renderizar();
-  }
-
-  function mudarAba(aba) {
-    abaAtual = aba;
-    document.querySelectorAll('.aba').forEach(b => b.classList.remove('ativa'));
-    document.getElementById('aba-' + aba).classList.add('ativa');
-    renderizar();
-  }
-
-  function filtrar(tipo) {
-    filtroAtual = tipo;
-    document.querySelectorAll('.filtros button').forEach(b => b.classList.remove('ativo'));
-    document.getElementById('filtro-' + tipo).classList.add('ativo');
-    renderizar();
-  }
-
-  // ---- Renderizar ----
-  function renderizar() {
-    const lista = document.getElementById('lista');
-    const hj = hoje();
-
-    // Resumo dos cards
-    document.getElementById('res-hoje').textContent =
-      tarefas.filter(t => !t.concluida && (!t.data || t.data === hj)).length;
-    document.getElementById('res-semana').textContent =
-      tarefas.filter(t => !t.concluida && t.data && t.data >= hj && t.data <= addDias(7)).length;
-    document.getElementById('res-mes').textContent =
-      tarefas.filter(t => !t.concluida && t.data && t.data >= hj && t.data <= addDias(30)).length;
-    document.getElementById('res-atrasadas').textContent =
-      tarefas.filter(t => isAtrasada(t)).length;
-
-    // Contador de pendentes geral
-    const pendentes = tarefas.filter(t => !t.concluida).length;
-    document.getElementById('contador').textContent = pendentes + ' tarefa(s) pendente(s)';
-
-    // Aplicar filtros
-    let visiveis = filtrarPorAba(tarefas);
-    visiveis = filtrarPorStatus(visiveis);
-
-    // Ordenar: atrasadas primeiro, depois por data, sem data por ultimo
-    visiveis.sort((a, b) => {
-      const aAt = isAtrasada(a) ? 0 : 1;
-      const bAt = isAtrasada(b) ? 0 : 1;
-      if (aAt !== bAt) return aAt - bAt;
-      if (!a.data && !b.data) return 0;
-      if (!a.data) return 1;
-      if (!b.data) return -1;
-      return a.data.localeCompare(b.data);
-    });
-
-    if (visiveis.length === 0) {
-      lista.innerHTML = '<p class="vazio">Nenhuma tarefa encontrada nesta visualizacao.</p>';
-      return;
+    /**
+     * Retorna a data de hoje no formato 'YYYY-MM-DD'.
+     * Usado para comparar com t.data (que tambem esta nesse formato).
+     *
+     * @returns {string} Data atual em 'YYYY-MM-DD'
+     */
+    function hoje() {
+        const d = new Date();
+        /* padStart(2,'0') garante dois digitos (ex: '07' em vez de '7') */
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     }
 
-    lista.innerHTML = visiveis.map(t => {
-      const atrasada = isAtrasada(t);
-      const badgePrioridade = `<span class="badge badge-prioridade-${t.prioridade}">${capitalizar(t.prioridade)}</span>`;
-      const badgeData = t.data
-        ? `<span class="badge badge-data ${atrasada ? 'badge-atrasada' : ''}">
-             ${atrasada ? 'Atrasada - ' : ''}${formatarData(t.data)}
-           </span>`
-        : '';
+    /**
+     * Retorna a data atual somada de n dias, no formato 'YYYY-MM-DD'.
+     * Usado para calcular os limites das abas (7 dias, 30 dias).
+     *
+     * @param  {number} n - Quantidade de dias a adicionar
+     * @returns {string}   Data em 'YYYY-MM-DD'
+     */
+    function addDias(n) {
+        const d = new Date();
+        d.setDate(d.getDate() + n); /* soma n dias */
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
 
-      return `
-        <li class="${t.concluida ? 'concluida' : ''}">
-          <input type="checkbox" ${t.concluida ? 'checked' : ''}
-                 onchange="alternarConcluida(${t.id})">
-          <div class="tarefa-corpo">
-            <div class="texto-tarefa">${escapar(t.texto)}</div>
-            <div class="tarefa-meta">
-              ${badgePrioridade}
-              ${badgeData}
-            </div>
-          </div>
-          <button class="btn-excluir" onclick="excluirTarefa(${t.id})" title="Excluir">x</button>
-        </li>
-      `;
-    }).join('');
-  }
+    /**
+     * Converte formato ISO 'YYYY-MM-DD' para o formato brasileiro 'DD/MM/YYYY'.
+     * Usado nos badges de data exibidos nas tarefas.
+     *
+     * @param  {string} iso - Data no formato 'YYYY-MM-DD'
+     * @returns {string}     Data no formato 'DD/MM/YYYY'
+     */
+    function formatarData(iso) {
+        if (!iso) return '';
+        const [a, m, d] = iso.split('-');
+        return `${d}/${m}/${a}`;
+    }
 
-  function escapar(texto) {
-    return texto.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  }
+    /**
+     * Verifica se uma tarefa esta atrasada.
+     * Uma tarefa e atrasada quando:
+     * - Possui data definida (t.data nao e vazio)
+     * - Ainda nao foi concluida
+     * - A data de vencimento e anterior a hoje
+     *
+     * @param  {object}  t - Objeto tarefa
+     * @returns {boolean}   true se atrasada
+     */
+    function isAtrasada(t) {
+        return t.data && !t.concluida && t.data < hoje();
+    }
 
-  function capitalizar(str) {
-    return str.charAt(0).toUpperCase() + str.slice(1);
-  }
+    /* ================================================================
+       FILTRAGEM POR ABA (periodo)
+       ================================================================ */
 
-  document.getElementById('inputTarefa').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') adicionarTarefa();
-  });
+    /**
+     * Filtra o array de tarefas de acordo com a aba ativa.
+     *
+     * REGRAS POR ABA:
+     * - 'hoje'   → sem data OU data == hoje OU atrasada
+     * - 'semana' → sem data OU data entre hoje e +7 dias OU atrasada
+     * - 'mes'    → sem data OU data entre hoje e +30 dias OU atrasada
+     * - 'todas'  → sem filtro
+     *
+     * Tarefas sem data aparecem em todas as abas (sao atemporais).
+     * Tarefas atrasadas aparecem em qualquer aba para nao serem ignoradas.
+     *
+     * @param  {Array} lista - Array de tarefas a filtrar
+     * @returns {Array}       Array filtrado
+     */
+    function filtrarPorAba(lista) {
+        const hj   = hoje();
+        const fim7  = addDias(7);
+        const fim30 = addDias(30);
 
-  // Define data padrao do campo como hoje
-  document.getElementById('dataVencimento').value = hoje();
+        if (abaAtual === 'hoje')
+            return lista.filter(t => !t.data || t.data === hj || isAtrasada(t));
 
-  renderizar();
+        if (abaAtual === 'semana')
+            return lista.filter(t => !t.data || (t.data >= hj && t.data <= fim7) || isAtrasada(t));
+
+        if (abaAtual === 'mes')
+            return lista.filter(t => !t.data || (t.data >= hj && t.data <= fim30) || isAtrasada(t));
+
+        return lista; /* aba 'todas': sem filtro de data */
+    }
+
+    /* ================================================================
+       FILTRAGEM POR STATUS
+       ================================================================ */
+
+    /**
+     * Filtra o array pelo estado de conclusao da tarefa.
+     *
+     * @param  {Array} lista - Array de tarefas a filtrar
+     * @returns {Array}       Array filtrado por status
+     */
+    function filtrarPorStatus(lista) {
+        if (filtroAtual === 'pendentes')  return lista.filter(t => !t.concluida);
+        if (filtroAtual === 'concluidas') return lista.filter(t =>  t.concluida);
+        return lista; /* 'todas': sem filtro de status */
+    }
+
+    /* ================================================================
+       ACOES DO USUARIO
+       ================================================================ */
+
+    /**
+     * Cria uma nova tarefa e a adiciona ao array global.
+     *
+     * ETAPAS:
+     * 1. Le e valida o texto do campo
+     * 2. Le prioridade e data selecionadas
+     * 3. Cria objeto tarefa com ID unico (timestamp)
+     * 4. Adiciona ao array e limpa os campos
+     * 5. Chama renderizar() para atualizar a tela
+     */
+    function adicionarTarefa() {
+        const input = document.getElementById('inputTarefa');
+        const texto = input.value.trim(); /* remove espacos das bordas */
+
+        /* Nao adiciona se campo estiver vazio */
+        if (!texto) { input.focus(); return; }
+
+        const prioridade = document.getElementById('prioridade').value;
+        const data       = document.getElementById('dataVencimento').value; /* 'YYYY-MM-DD' */
+
+        /* Objeto tarefa adicionado ao array */
+        tarefas.push({
+            id:        Date.now(), /* timestamp: garante ID unico */
+            texto,                 /* shorthand ES6 para texto: texto */
+            concluida: false,      /* toda tarefa comeca como pendente */
+            prioridade,
+            data
+        });
+
+        /* Limpa campos apos adicionar */
+        input.value = '';
+        document.getElementById('dataVencimento').value = '';
+        document.getElementById('prioridade').value     = 'media';
+        input.focus(); /* devolve foco para o campo de texto */
+
+        renderizar();
+    }
+
+    /**
+     * Alterna o estado de conclusao de uma tarefa (pendente ↔ concluida).
+     * Chamado pelo evento onchange do checkbox de cada item.
+     *
+     * @param {number} id - ID da tarefa a alternar
+     */
+    function alternarConcluida(id) {
+        const t = tarefas.find(t => t.id === id); /* busca no array pelo id */
+        if (t) t.concluida = !t.concluida;         /* inverte o valor booleano */
+        renderizar();
+    }
+
+    /**
+     * Remove permanentemente uma tarefa do array.
+     * Chamado pelo botao X de cada item.
+     *
+     * @param {number} id - ID da tarefa a excluir
+     */
+    function excluirTarefa(id) {
+        /* filter retorna novo array sem a tarefa com o id informado */
+        tarefas = tarefas.filter(t => t.id !== id);
+        renderizar();
+    }
+
+    /**
+     * Remove todas as tarefas que foram marcadas como concluidas.
+     * Mantém apenas as pendentes.
+     */
+    function limparConcluidas() {
+        tarefas = tarefas.filter(t => !t.concluida);
+        renderizar();
+    }
+
+    /**
+     * Troca a aba ativa e atualiza a lista.
+     * Remove a classe 'ativa' de todas as abas e aplica na selecionada.
+     *
+     * @param {string} aba - 'hoje' | 'semana' | 'mes' | 'todas'
+     */
+    function mudarAba(aba) {
+        abaAtual = aba;
+        document.querySelectorAll('.aba').forEach(b => b.classList.remove('ativa'));
+        document.getElementById('aba-' + aba).classList.add('ativa');
+        renderizar();
+    }
+
+    /**
+     * Troca o filtro de status ativo e atualiza a lista.
+     *
+     * @param {string} tipo - 'todas' | 'pendentes' | 'concluidas'
+     */
+    function filtrar(tipo) {
+        filtroAtual = tipo;
+        document.querySelectorAll('.filtros button').forEach(b => b.classList.remove('ativo'));
+        document.getElementById('filtro-' + tipo).classList.add('ativo');
+        renderizar();
+    }
+
+    /* ================================================================
+       RENDERIZACAO
+       ================================================================ */
+
+    /**
+     * Funcao central: re-renderiza toda a interface com o estado atual.
+     *
+     * ETAPAS:
+     * 1. Atualiza os 4 cards de resumo (contagens)
+     * 2. Atualiza o contador de pendentes no rodape
+     * 3. Aplica filtro de aba sobre o array global
+     * 4. Aplica filtro de status sobre o resultado anterior
+     * 5. Ordena: atrasadas → por data → sem data
+     * 6. Gera o HTML dos itens e injeta no <ul>
+     *
+     * Chamada sempre que o estado muda (adicionar, concluir, excluir, filtrar).
+     */
+    function renderizar() {
+        const lista = document.getElementById('lista');
+        const hj    = hoje();
+
+        /* --- Etapa 1: atualizar cards de resumo --- */
+
+        /* Hoje: pendentes sem data OU com data igual a hoje */
+        document.getElementById('res-hoje').textContent =
+            tarefas.filter(t => !t.concluida && (!t.data || t.data === hj)).length;
+
+        /* Semana: pendentes com data nos proximos 7 dias */
+        document.getElementById('res-semana').textContent =
+            tarefas.filter(t => !t.concluida && t.data && t.data >= hj && t.data <= addDias(7)).length;
+
+        /* Mes: pendentes com data nos proximos 30 dias */
+        document.getElementById('res-mes').textContent =
+            tarefas.filter(t => !t.concluida && t.data && t.data >= hj && t.data <= addDias(30)).length;
+
+        /* Atrasadas: pendentes com data anterior a hoje */
+        document.getElementById('res-atrasadas').textContent =
+            tarefas.filter(t => isAtrasada(t)).length;
+
+        /* --- Etapa 2: contador de pendentes no rodape --- */
+        const pendentes = tarefas.filter(t => !t.concluida).length;
+        document.getElementById('contador').textContent = pendentes + ' tarefa(s) pendente(s)';
+
+        /* --- Etapa 3 e 4: aplicar filtros em cascata --- */
+        let visiveis = filtrarPorAba(tarefas);    /* filtra por periodo */
+        visiveis     = filtrarPorStatus(visiveis); /* filtra por status  */
+
+        /* --- Etapa 5: ordenar tarefas ---
+           Criterios (em ordem de prioridade):
+           1. Atrasadas primeiro (aAt=0 antes de nao-atrasadas aAt=1)
+           2. Por data mais proxima (comparacao de string 'YYYY-MM-DD')
+           3. Sem data por ultimo (!a.data → vai para o final)
+        */
+        visiveis.sort((a, b) => {
+            const aAt = isAtrasada(a) ? 0 : 1;
+            const bAt = isAtrasada(b) ? 0 : 1;
+            if (aAt !== bAt) return aAt - bAt;     /* atrasadas primeiro */
+
+            if (!a.data && !b.data) return 0;      /* ambas sem data: empatam */
+            if (!a.data) return 1;                 /* a sem data: vai para baixo */
+            if (!b.data) return -1;                /* b sem data: vai para baixo */
+
+            return a.data.localeCompare(b.data);   /* ordena por data crescente */
+        });
+
+        /* --- Etapa 6: exibir mensagem se vazio --- */
+        if (visiveis.length === 0) {
+            lista.innerHTML = '<p class="vazio">Nenhuma tarefa encontrada nesta visualizacao.</p>';
+            return;
+        }
+
+        /* --- Etapa 6: gerar HTML de cada item ---
+           Usa template string (`) para montar o HTML com os dados da tarefa.
+           Cada item tem: checkbox | texto + badges | botao excluir
+        */
+        lista.innerHTML = visiveis.map(t => {
+            const atrasada = isAtrasada(t);
+
+            /* Badge de prioridade: classe CSS varia por nivel */
+            const badgePrioridade = `<span class="badge badge-prioridade-${t.prioridade}">
+                                        ${capitalizar(t.prioridade)}
+                                     </span>`;
+
+            /* Badge de data: aparece apenas se a tarefa tiver data definida
+               Se atrasada: adiciona classe badge-atrasada (fundo vermelho) e prefixo "Atrasada" */
+            const badgeData = t.data
+                ? `<span class="badge badge-data ${atrasada ? 'badge-atrasada' : ''}">
+                       ${atrasada ? 'Atrasada - ' : ''}${formatarData(t.data)}
+                   </span>`
+                : ''; /* sem data: nao exibe badge */
+
+            return `
+                <li class="${t.concluida ? 'concluida' : ''}">
+
+                    <!-- Checkbox: onchange chama alternarConcluida com o id da tarefa -->
+                    <input type="checkbox" ${t.concluida ? 'checked' : ''}
+                           onchange="alternarConcluida(${t.id})">
+
+                    <!-- Corpo: texto principal + linha de badges -->
+                    <div class="tarefa-corpo">
+                        <!-- escapar() previne XSS ao inserir texto do usuario -->
+                        <div class="texto-tarefa">${escapar(t.texto)}</div>
+                        <div class="tarefa-meta">
+                            ${badgePrioridade}
+                            ${badgeData}
+                        </div>
+                    </div>
+
+                    <!-- Botao de exclusao: passa o id para excluirTarefa() -->
+                    <button class="btn-excluir"
+                            onclick="excluirTarefa(${t.id})"
+                            title="Excluir">x</button>
+                </li>
+            `;
+        }).join(''); /* join('') concatena sem separadores */
+    }
+
+    /* ================================================================
+       UTILITARIOS
+       ================================================================ */
+
+    /**
+     * Escapa caracteres especiais HTML para prevenir XSS.
+     * XSS (Cross-Site Scripting): ataque onde codigo malicioso e injetado
+     * via entrada do usuario e executado no navegador.
+     *
+     * Exemplo: texto '<'+'script>alert(1)<'+'/script>' vira
+     *          '&lt;script&gt;alert(1)&lt;/script&gt;'
+     *
+     * @param  {string} texto - Texto a escapar
+     * @returns {string}       Texto seguro para inserir no HTML
+     */
+    function escapar(texto) {
+        return texto
+            .replace(/&/g,  '&amp;')   /* & → &amp;  (deve ser o primeiro!) */
+            .replace(/</g,  '&lt;')    /* < → &lt;   */
+            .replace(/>/g,  '&gt;');   /* > → &gt;   */
+    }
+
+    /**
+     * Coloca a primeira letra de uma string em maiusculo.
+     * Usado para exibir a prioridade com letra maiuscula no badge.
+     *
+     * @param  {string} str - String a capitalizar
+     * @returns {string}     String com primeira letra em maiusculo
+     */
+    function capitalizar(str) {
+        return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    /* ================================================================
+       INICIALIZACAO
+       ================================================================ */
+
+    /* Permite adicionar tarefa pressionando Enter no campo de texto */
+    document.getElementById('inputTarefa').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') adicionarTarefa();
+    });
+
+    /* Preenche o campo de data com a data de hoje ao carregar a pagina */
+    document.getElementById('dataVencimento').value = hoje();
+
+    /* Renderiza a lista inicial (vazia) */
+    renderizar();
 </script>
 </body>
 </html>
+
+<!-- ================================================================
+     RESUMO DO ARQUIVO
+     ================================================================
+
+     ESTADO:
+     - tarefas[]    → array de objetos { id, texto, concluida, prioridade, data }
+     - abaAtual     → periodo selecionado ('hoje'|'semana'|'mes'|'todas')
+     - filtroAtual  → status selecionado ('todas'|'pendentes'|'concluidas')
+
+     FLUXO PRINCIPAL:
+     1. Usuario digita tarefa + escolhe prioridade e data
+     2. adicionarTarefa() cria objeto e adiciona ao array
+     3. renderizar() aplica filtros, ordena e gera HTML
+
+     FILTRAGEM (dupla):
+     - filtrarPorAba()    → periodo (data de vencimento)
+     - filtrarPorStatus() → estado (pendente/concluida)
+     Os dois filtros sao aplicados em sequencia (cascata).
+
+     ORDENACAO:
+     1. Atrasadas primeiro
+     2. Por data crescente
+     3. Sem data por ultimo
+
+     SEGURANCA:
+     - escapar() previne injecao de HTML nos textos do usuario (XSS)
+
+     DESIGN:
+     - Fundo cinza claro
+     - Card branco com sombra
+     - Badges coloridos por prioridade e estado
+     - Itens concluidos com opacidade reduzida e texto riscado
+
+     COMPATIBILIDADE:
+     - Funciona com Live Server (VS Code)
+     - Nao requer servidor ou banco de dados
+     - Responsivo para mobile
+     ================================================================ -->
